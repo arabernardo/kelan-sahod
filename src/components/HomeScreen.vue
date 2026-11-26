@@ -64,7 +64,13 @@ const isPayday = computed(() => props.info.daysLeft === 0)
       </p>
     </div>
 
-    <p v-if="info.holidayDataMissingForYear" class="hint">{{ copy.home.holidayHint }}</p>
+    <div class="hints">
+      <p v-if="info.holidayDataMissingForYear" class="hint">{{ copy.home.holidayHint }}</p>
+      <p v-else-if="info.holidayListMayBeOutdated" class="hint">{{ copy.home.holidayMaybeOutdated }}</p>
+      <p v-if="info.holidayListUpdated" class="hint hint--quiet">
+        {{ copy.home.holidayListAsOf(formatShortDate(info.holidayListUpdated)) }}
+      </p>
+    </div>
 
     <button type="button" class="btn btn--quiet home__edit" @click="$emit('edit')">
       {{ copy.home.editSchedule }}

@@ -28,5 +28,11 @@ export type PaydayInfo = {
   previousPayday: AdjustedPayday
   /** 0 = just got paid, 1 = payday is today */
   progress: number
+  /** The movable holiday list has no entry at all for the current year */
   holidayDataMissingForYear: boolean
+  /** Payday is within ~10 days and the list was not confirmed against GitHub in the last 24h */
+  holidayListMayBeOutdated: boolean
+  /** Date the holiday list in use was last edited (YYYY-MM-DD) */
+  holidayListUpdated: string | null
+  holidayListSource: 'embedded' | 'remote'
 }

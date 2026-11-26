@@ -172,6 +172,8 @@ export const copy = {
     progressLabel: 'Progress papunta sa susunod na sahod',
     lastPayday: (date: string) => `Huling sahod: ${date}`,
     holidayHint: 'Baka kulang pa ang holiday list para sa taon na ’to.',
+    holidayMaybeOutdated: 'Baka may bagong holiday na hindi pa nakalista.',
+    holidayListAsOf: (date: string) => `Holiday list as of ${date}`,
     editSchedule: 'Palitan ang sahod schedule',
   },
 

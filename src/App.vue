@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import HomeScreen from './components/HomeScreen.vue'
 import SetupScreen from './components/SetupScreen.vue'
-import { getPaydayInfo, loadSchedule, saveSchedule } from './api'
+import { getPaydayInfo, loadSchedule, refreshHolidays, saveSchedule } from './api'
 import { copy } from './copy'
 import type { PaydayInfo, Schedule } from './types'
 
@@ -23,6 +23,7 @@ async function init() {
     schedule.value = saved
     info.value = await getPaydayInfo(saved)
     screen.value = 'home'
+    void syncHolidays()
   } catch (err) {
     console.error(err)
     screen.value = 'error'
@@ -35,6 +36,7 @@ async function onSave(next: Schedule) {
     schedule.value = next
     info.value = await getPaydayInfo(next)
     screen.value = 'home'
+    void syncHolidays()
   } catch (err) {
     console.error(err)
     screen.value = 'error'
@@ -52,6 +54,22 @@ async function refresh() {
     info.value = await getPaydayInfo(schedule.value)
   } catch (err) {
     console.error(err)
+  }
+  void syncHolidays()
+}
+
+// Quietly fetch the latest holiday list (at launch, then at most every 6 hours).
+// Failing is fine: offline, the cached or built-in list is used and nothing is shown.
+const SYNC_EVERY_MS = 6 * 60 * 60 * 1000
+let lastSyncAttempt = 0
+
+async function syncHolidays() {
+  if (Date.now() - lastSyncAttempt < SYNC_EVERY_MS) return
+  lastSyncAttempt = Date.now()
+  try {
+    if (await refreshHolidays()) await refresh()
+  } catch (err) {
+    console.debug('Holiday sync skipped:', err)
   }
 }
 

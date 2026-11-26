@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   adjustmentNote,
   bucketFor,
+  copy,
   describeReason,
   formatShortDate,
   messages,
@@ -119,5 +120,12 @@ describe('adjustment note', () => {
     expect(adjustmentNote([monday, sunday, sat])).toBe(
       'Naka-advance ang sahod mo kasi holiday ang Dec 15 (Test), Linggo ang Dec 14 at Sabado ang Dec 13.',
     )
+  })
+})
+
+describe('holiday list hints', () => {
+  it('has the outdated-list hint and the "as of" line', () => {
+    expect(copy.home.holidayMaybeOutdated).toBe('Baka may bagong holiday na hindi pa nakalista.')
+    expect(copy.home.holidayListAsOf(formatShortDate('2026-11-26'))).toBe('Holiday list as of Nov 26')
   })
 })

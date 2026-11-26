@@ -1,5 +1,6 @@
 {
-  "_readme": "UPDATE THIS EVERY YEAR based on the official Presidential Proclamations.",
+  "_readme": "UPDATE THIS EVERY YEAR based on the official Presidential Proclamations. Bump \"updated\" every time you edit this file: the app only accepts a downloaded copy whose \"updated\" date is the same or newer than the one built into it.",
+  "updated": "2026-11-26",
   "holidays": [
     { "date": "2026-02-17", "name": "Chinese New Year" },
     { "date": "2026-04-02", "name": "Maundy Thursday" },

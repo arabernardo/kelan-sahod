@@ -9,7 +9,7 @@
 //! Special WORKING days do not count and must never be added.
 
 use chrono::{Datelike, NaiveDate};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::RangeInclusive;
 
@@ -25,6 +25,10 @@ pub struct Holiday {
 /// Shape of `data/holidays.json`. Unknown fields (like `_readme`) are ignored.
 #[derive(Debug, Deserialize)]
 pub struct MovableFile {
+    /// Date this list was last edited (YYYY-MM-DD). A downloaded list is only
+    /// accepted when this is the same or newer than the embedded one.
+    #[serde(default)]
+    pub updated: Option<NaiveDate>,
     #[serde(default)]
     pub holidays: Vec<Holiday>,
     /// Dates we were NOT sure about. Never used for calculations.
@@ -73,6 +77,58 @@ pub fn fixed_holidays(year: i32) -> Vec<Holiday> {
 /// True when the movable list has NO entry at all for `year`.
 pub fn movable_missing_for_year(movable: &[Holiday], year: i32) -> bool {
     movable.iter().all(|h| h.date.year() != year)
+}
+
+/// Where the holiday list in use came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ListSource {
+    /// Built into the app.
+    Embedded,
+    /// Downloaded from the remote holidays.json (cached on disk).
+    Remote,
+}
+
+/// What we know about the list in use. Built by the command layer, read by `payday_info`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HolidayStatus {
+    pub missing_for_year: bool,
+    /// True when the list was confirmed against the remote file in the last 24 hours.
+    pub verified_recently: bool,
+    pub updated: Option<NaiveDate>,
+    pub source: ListSource,
+}
+
+/// Checks a downloaded list before we trust it. Strict on purpose: the UI shows these names.
+pub fn validate_remote(file: &MovableFile) -> Result<(), String> {
+    if file.updated.is_none() {
+        return Err("missing \"updated\" date".into());
+    }
+    if file.holidays.is_empty() {
+        return Err("no holidays in file".into());
+    }
+    if file.holidays.len() > 500 {
+        return Err("too many holidays".into());
+    }
+    for h in &file.holidays {
+        if !(2000..=2100).contains(&h.date.year()) {
+            return Err(format!("date out of range: {}", h.date));
+        }
+        let name = h.name.trim();
+        if name.is_empty() || name.chars().count() > 80 {
+            return Err(format!("bad holiday name for {}", h.date));
+        }
+    }
+    Ok(())
+}
+
+/// Picks the list to use. A validated cached (downloaded) list wins only when it is the
+/// same age or newer than the embedded one, so an app update is never beaten by an old cache.
+pub fn resolve(embedded: MovableFile, cached: Option<MovableFile>) -> (MovableFile, ListSource) {
+    match cached {
+        Some(c) if c.updated >= embedded.updated => (c, ListSource::Remote),
+        _ => (embedded, ListSource::Embedded),
+    }
 }
 
 /// Lookup table: date -> holiday name.
@@ -141,6 +197,58 @@ mod tests {
         }];
         assert!(!movable_missing_for_year(&movable, 2026));
         assert!(movable_missing_for_year(&movable, 2030));
+    }
+
+    fn file(updated: Option<(i32, u32, u32)>, entries: &[(i32, u32, u32, &str)]) -> MovableFile {
+        MovableFile {
+            updated: updated.map(|(y, m, day)| d(y, m, day)),
+            holidays: entries
+                .iter()
+                .map(|&(y, m, day, name)| Holiday { date: d(y, m, day), name: name.into() })
+                .collect(),
+            todo_verify: vec![],
+        }
+    }
+
+    #[test]
+    fn embedded_json_passes_remote_validation() {
+        let embedded = parse_movable(EMBEDDED_MOVABLE_JSON).unwrap();
+        assert_eq!(validate_remote(&embedded), Ok(()));
+    }
+
+    #[test]
+    fn validate_remote_accepts_a_good_file() {
+        let f = file(Some((2026, 12, 1)), &[(2026, 12, 24, "Christmas Eve")]);
+        assert_eq!(validate_remote(&f), Ok(()));
+    }
+
+    #[test]
+    fn validate_remote_rejects_bad_files() {
+        assert!(validate_remote(&file(None, &[(2026, 12, 24, "X")])).is_err());
+        assert!(validate_remote(&file(Some((2026, 12, 1)), &[])).is_err());
+        assert!(validate_remote(&file(Some((2026, 12, 1)), &[(1999, 1, 2, "Old")])).is_err());
+        assert!(validate_remote(&file(Some((2026, 12, 1)), &[(2026, 12, 24, "   ")])).is_err());
+        let long = "x".repeat(81);
+        assert!(validate_remote(&file(Some((2026, 12, 1)), &[(2026, 12, 24, &long)])).is_err());
+    }
+
+    #[test]
+    fn resolve_prefers_newer_or_equal_cache() {
+        let embedded = || file(Some((2026, 11, 26)), &[(2026, 4, 3, "Good Friday")]);
+        // newer cache wins
+        let (list, source) = resolve(embedded(), Some(file(Some((2026, 12, 1)), &[(2026, 12, 24, "Christmas Eve")])));
+        assert_eq!(source, ListSource::Remote);
+        assert_eq!(list.holidays[0].name, "Christmas Eve");
+        // equal cache counts as remote (it was verified against the remote file)
+        let (_, source) = resolve(embedded(), Some(file(Some((2026, 11, 26)), &[(2026, 4, 3, "Good Friday")])));
+        assert_eq!(source, ListSource::Remote);
+        // older cache loses to an app update
+        let (list, source) = resolve(embedded(), Some(file(Some((2026, 10, 1)), &[(2026, 10, 2, "Old")])));
+        assert_eq!(source, ListSource::Embedded);
+        assert_eq!(list.holidays[0].name, "Good Friday");
+        // no cache
+        let (_, source) = resolve(embedded(), None);
+        assert_eq!(source, ListSource::Embedded);
     }
 
     #[test]

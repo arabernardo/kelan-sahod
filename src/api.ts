@@ -46,3 +46,13 @@ export async function saveSchedule(schedule: Schedule): Promise<void> {
 export function getPaydayInfo(schedule: Schedule): Promise<PaydayInfo> {
   return invoke<PaydayInfo>('get_payday_info', { schedule })
 }
+
+/**
+ * Asks Rust to download the latest holiday list from GitHub (cached on disk).
+ * Resolves true when the list was confirmed, so the caller can reload the countdown.
+ * Offline or failing is fine: the cached or built-in list keeps working.
+ */
+export async function refreshHolidays(): Promise<boolean> {
+  const result = await invoke<{ synced: boolean }>('refresh_holidays')
+  return result.synced
+}

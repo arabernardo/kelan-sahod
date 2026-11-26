@@ -4,7 +4,7 @@
 //! Rule: if the nominal payday falls on a Saturday, Sunday or holiday, the actual
 //! payday is the nearest PREVIOUS working day. Paydays never move forward.
 
-use crate::holidays::Holidays;
+use crate::holidays::{HolidayStatus, Holidays, ListSource};
 use chrono::{Datelike, NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
 
@@ -60,8 +60,18 @@ pub struct PaydayInfo {
     pub previous_payday: AdjustedPayday,
     /// 0.0 = just got paid, 1.0 = payday is today.
     pub progress: f64,
+    /// The movable list has no entry at all for the current year.
     pub holiday_data_missing_for_year: bool,
+    /// Payday is close and the list was not confirmed against the remote file recently,
+    /// so a freshly proclaimed holiday could still be missing.
+    pub holiday_list_may_be_outdated: bool,
+    /// The `updated` date of the list in use.
+    pub holiday_list_updated: Option<NaiveDate>,
+    pub holiday_list_source: ListSource,
 }
+
+/// The "maybe outdated" hint shows when payday is this many days away or closer.
+pub const HINT_WINDOW_DAYS: i64 = 10;
 
 pub fn days_in_month(year: i32, month: u32) -> u32 {
     let (next_year, next_month) = if month == 12 {
@@ -172,7 +182,7 @@ pub fn payday_info(
     today: NaiveDate,
     schedule: &Schedule,
     holidays: &Holidays,
-    holiday_data_missing_for_year: bool,
+    status: &HolidayStatus,
 ) -> PaydayInfo {
     let (next, days_left) = next_payday(today, schedule, holidays);
     let previous = previous_payday(today, schedule, holidays);
@@ -187,7 +197,10 @@ pub fn payday_info(
         next_payday: next,
         previous_payday: previous,
         progress,
-        holiday_data_missing_for_year,
+        holiday_data_missing_for_year: status.missing_for_year,
+        holiday_list_may_be_outdated: days_left <= HINT_WINDOW_DAYS && !status.verified_recently,
+        holiday_list_updated: status.updated,
+        holiday_list_source: status.source,
     }
 }
 
@@ -209,6 +222,15 @@ mod tests {
     }
 
     const TWICE: Schedule = Schedule { first_day: 15, second_day: 31 };
+
+    fn status(missing: bool, verified: bool) -> HolidayStatus {
+        HolidayStatus {
+            missing_for_year: missing,
+            verified_recently: verified,
+            updated: Some(d(2026, 11, 26)),
+            source: ListSource::Embedded,
+        }
+    }
 
     // Sanity check on the calendar facts the tests rely on.
     #[test]
@@ -473,16 +495,16 @@ mod tests {
     fn progress_runs_from_last_payday_to_next() {
         let h = hols(&[]);
         // Cycle: Fri Oct 31 2025 -> Fri Nov 14 2025 (14 days).
-        let mid = payday_info(d(2025, 11, 7), &TWICE, &h, false);
+        let mid = payday_info(d(2025, 11, 7), &TWICE, &h, &status(false, false));
         assert_eq!(mid.previous_payday.actual_date, d(2025, 10, 31));
         assert_eq!(mid.next_payday.actual_date, d(2025, 11, 14));
         assert!((mid.progress - 0.5).abs() < 1e-9);
         // On payday the bar is full.
-        let on_payday = payday_info(d(2025, 11, 14), &TWICE, &h, false);
+        let on_payday = payday_info(d(2025, 11, 14), &TWICE, &h, &status(false, false));
         assert_eq!(on_payday.days_left, 0);
         assert!((on_payday.progress - 1.0).abs() < 1e-9);
         // The day after payday it starts again.
-        let after = payday_info(d(2025, 11, 15), &TWICE, &h, false);
+        let after = payday_info(d(2025, 11, 15), &TWICE, &h, &status(false, false));
         assert_eq!(after.previous_payday.actual_date, d(2025, 11, 14));
         assert!(after.progress > 0.0 && after.progress < 0.2);
     }
@@ -490,7 +512,7 @@ mod tests {
     #[test]
     fn serializes_with_camel_case_and_iso_dates() {
         let h = hols(&[]);
-        let info = payday_info(d(2025, 11, 10), &TWICE, &h, true);
+        let info = payday_info(d(2025, 11, 10), &TWICE, &h, &status(true, false));
         let json = serde_json::to_value(&info).unwrap();
         assert_eq!(json["daysLeft"], 4);
         assert_eq!(json["holidayDataMissingForYear"], true);
@@ -500,5 +522,38 @@ mod tests {
         assert_eq!(json["nextPayday"]["actualWeekday"], 5);
         assert_eq!(json["nextPayday"]["reasons"][0]["kind"], "saturday");
         assert_eq!(json["nextPayday"]["reasons"][0]["date"], "2025-11-15");
+        assert_eq!(json["holidayListMayBeOutdated"], true);
+        assert_eq!(json["holidayListUpdated"], "2026-11-26");
+        assert_eq!(json["holidayListSource"], "embedded");
+    }
+
+    #[test]
+    fn outdated_hint_shows_within_ten_days_of_payday() {
+        let h = hols(&[]);
+        // Payday Fri Nov 14 2025: 10 days left on Nov 4, 11 days left on Nov 3.
+        let near = payday_info(d(2025, 11, 4), &TWICE, &h, &status(false, false));
+        assert_eq!(near.days_left, 10);
+        assert!(near.holiday_list_may_be_outdated);
+        let far = payday_info(d(2025, 11, 3), &TWICE, &h, &status(false, false));
+        assert_eq!(far.days_left, 11);
+        assert!(!far.holiday_list_may_be_outdated);
+        // On payday itself it still applies (0 <= 10).
+        let today = payday_info(d(2025, 11, 14), &TWICE, &h, &status(false, false));
+        assert!(today.holiday_list_may_be_outdated);
+    }
+
+    #[test]
+    fn outdated_hint_is_hidden_when_list_was_verified_recently() {
+        let h = hols(&[]);
+        let info = payday_info(d(2025, 11, 10), &TWICE, &h, &status(false, true));
+        assert!(!info.holiday_list_may_be_outdated);
+    }
+
+    #[test]
+    fn missing_year_flag_is_independent_of_the_outdated_hint() {
+        let h = hols(&[]);
+        let info = payday_info(d(2025, 11, 3), &TWICE, &h, &status(true, true));
+        assert!(info.holiday_data_missing_for_year);
+        assert!(!info.holiday_list_may_be_outdated);
     }
 }
