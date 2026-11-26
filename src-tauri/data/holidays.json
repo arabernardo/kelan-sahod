@@ -1,0 +1,26 @@
+{
+  "_readme": "UPDATE THIS EVERY YEAR based on the official Presidential Proclamations.",
+  "holidays": [
+    { "date": "2026-02-17", "name": "Chinese New Year" },
+    { "date": "2026-04-02", "name": "Maundy Thursday" },
+    { "date": "2026-04-03", "name": "Good Friday" },
+    { "date": "2026-04-04", "name": "Black Saturday" },
+    { "date": "2026-08-31", "name": "National Heroes Day" },
+
+    { "date": "2027-03-25", "name": "Maundy Thursday" },
+    { "date": "2027-03-26", "name": "Good Friday" },
+    { "date": "2027-03-27", "name": "Black Saturday" },
+    { "date": "2027-08-30", "name": "National Heroes Day" }
+  ],
+  "todoVerify": [
+    { "year": 2026, "name": "Eid'l Fitr", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
+    { "year": 2026, "name": "Eid'l Adha", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
+    { "year": 2026, "name": "All Souls' Day (Nov 2)", "note": "Declared a special non-working day in some years only. Check the proclamation." },
+    { "year": 2026, "name": "Christmas Eve (Dec 24)", "note": "Declared a special non-working day in some years only. Check the proclamation." },
+    { "year": 2027, "name": "Chinese New Year", "note": "Only add if declared a special non-working day for 2027." },
+    { "year": 2027, "name": "Eid'l Fitr", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
+    { "year": 2027, "name": "Eid'l Adha", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
+    { "year": 2027, "name": "All Souls' Day (Nov 2)", "note": "Check the proclamation." },
+    { "year": 2027, "name": "Christmas Eve (Dec 24)", "note": "Check the proclamation." }
+  ]
+}
