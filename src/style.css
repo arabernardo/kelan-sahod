@@ -8,6 +8,7 @@
   --ink: #10261a;
   --muted: #475f51;
   --line: #bfd0c4;
+  --faded: #5a6e61; /* finished items: greyed out but still readable */
 
   --accent: #0e6b3e;
   --on-accent: #f2faf4;
@@ -33,6 +34,7 @@
     --ink: #e5f1e8;
     --muted: #9db6a5;
     --line: #294034;
+    --faded: #7f9988;
 
     --accent: #5ccb8b;
     --on-accent: #06200f;
@@ -88,7 +90,7 @@ body {
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 460px;
+  max-width: 1040px;
   min-height: 100dvh;
   margin: 0 auto;
   padding: clamp(16px, 5vw, 28px);
@@ -142,12 +144,27 @@ body {
 
 /* ---------- home ---------- */
 
+/* Narrow windows: one centered column. Wide windows: two columns (see the media query below). */
 .home {
-  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.home__main,
+.home__side {
+  position: relative; /* the payday burst is positioned from the countdown column */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.home__side {
+  flex: 1;
 }
 
 .hero {
@@ -170,6 +187,20 @@ body {
   line-height: 0.9;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+}
+
+.hero--payday {
+  display: flex;
+  align-items: center;
+  min-height: 10rem;
+}
+
+.hero__payday {
+  margin: 0;
+  font-size: clamp(3.4rem, 11vw, 5.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .hero__unit {
@@ -225,6 +256,79 @@ body {
   font-size: 0.9rem;
 }
 
+.month__title {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.month__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.holiday {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.holiday:last-child {
+  border-bottom: 0;
+}
+
+.holiday__date {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.holiday__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.holiday__name {
+  font-weight: 700;
+}
+
+.holiday__day {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Finished holidays: italic and greyed out */
+.holiday--past {
+  color: var(--faded);
+  font-style: italic;
+}
+
+.holiday--past .holiday__name {
+  font-weight: 500;
+}
+
+.holiday--past .holiday__day {
+  color: inherit;
+}
+
+.holiday--today .holiday__name {
+  font-weight: 800;
+}
+
+.tag {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .hints {
   display: flex;
   flex-direction: column;
@@ -241,7 +345,10 @@ body {
   font-size: 0.82rem;
 }
 
-.home__edit {
+.home__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
   margin-top: auto;
 }
 
@@ -281,6 +388,15 @@ body {
 /* ---------- setup ---------- */
 
 .setup {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+.setup__form {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -427,6 +543,164 @@ body {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 700;
+}
+
+/* ---------- compact mode: countdown only, small window ---------- */
+
+.shell--compact {
+  padding: 16px;
+}
+
+.home--compact,
+.home--compact .home__main,
+.home--compact .home__side {
+  gap: 14px;
+}
+
+.home--compact .hero {
+  padding: 18px 20px 16px;
+}
+
+.home--compact .hero__number {
+  font-size: 5.5rem;
+}
+
+.home--compact .hero__payday {
+  font-size: 3.4rem;
+}
+
+.home--compact .hero--payday {
+  min-height: 7rem;
+}
+
+.home--compact .hero__unit {
+  margin-top: 4px;
+  font-size: 1.2rem;
+}
+
+.home--compact .hero__date {
+  margin-top: 14px;
+  padding-top: 10px;
+  font-size: 1rem;
+}
+
+.home--compact .confetti {
+  top: 100px;
+}
+
+.home--compact .note {
+  font-size: 0.9rem;
+}
+
+.home--compact .message {
+  font-size: 1.1rem;
+}
+
+.home--compact .btn {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+}
+
+/* ---------- settings ---------- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.settings__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings__title {
+  margin: 8px 0 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--muted);
+}
+
+.about p {
+  margin: 0;
+}
+
+.about__title {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* ---------- landscape: wide windows use two columns ---------- */
+
+@media (min-width: 720px) {
+  .shell {
+    padding: 28px 36px;
+  }
+
+  /* Home: countdown on the left, progress + holidays + settings on the right */
+  .home {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 36px;
+    max-width: none;
+    margin: 0;
+  }
+
+  .hero__number {
+    font-size: 9.5rem;
+  }
+
+  .holiday {
+    padding: 8px 0;
+  }
+
+  /* Setup: title on the left, choices on the right, centered in the window */
+  .setup {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 56px;
+    max-width: 880px;
+    margin: auto;
+  }
+
+  .setup__title {
+    font-size: 3.4rem;
+  }
+
+  /* Settings: layout and language side by side */
+  .settings {
+    max-width: 800px;
+  }
+
+  .settings__groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .setup__form {
+    gap: 20px;
+  }
+
+  .choice {
+    padding: 10px 16px;
+  }
 }
 
 /* ---------- motion preferences ---------- */

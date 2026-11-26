@@ -1,8 +1,8 @@
 {
   "name": "kelan-sahod",
   "private": true,
-  "version": "0.1.1",
-  "author": "Arianna Bernardo (ariannamaounab@gmail.com)",
+  "version": "0.1.2",
+  "author": "Arianna Maouna Bernardo (ariannamaounab@gmail.com)",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "tauri:dev": "node scripts/dev.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

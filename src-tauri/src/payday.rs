@@ -51,6 +51,25 @@ pub struct AdjustedPayday {
     pub reasons: Vec<AdjustReason>,
 }
 
+/// Where a holiday sits relative to today. The UI turns this into styling and a tag.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HolidayState {
+    Past,
+    Today,
+    Upcoming,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonthHoliday {
+    pub date: NaiveDate,
+    pub name: String,
+    /// 1 = Monday ... 7 = Sunday
+    pub weekday: u32,
+    pub state: HolidayState,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PaydayInfo {
@@ -68,10 +87,19 @@ pub struct PaydayInfo {
     /// The `updated` date of the list in use.
     pub holiday_list_updated: Option<NaiveDate>,
     pub holiday_list_source: ListSource,
+    /// Every holiday in the current month (Asia/Manila), in date order.
+    pub month_holidays: Vec<MonthHoliday>,
 }
 
 /// The "maybe outdated" hint shows when payday is this many days away or closer.
 pub const HINT_WINDOW_DAYS: i64 = 10;
+
+/// Parses a test date like "2026-11-27" (used by the debug-only KELAN_SAHOD_TODAY override).
+/// Anything that isn't a real YYYY-MM-DD calendar date returns `None`.
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
+pub fn parse_date_override(text: &str) -> Option<NaiveDate> {
+    NaiveDate::parse_from_str(text.trim(), "%Y-%m-%d").ok()
+}
 
 pub fn days_in_month(year: i32, month: u32) -> u32 {
     let (next_year, next_month) = if month == 12 {
@@ -177,6 +205,24 @@ pub fn previous_payday(
         .expect("a payday within two months back")
 }
 
+/// All holidays in `today`'s month, each marked past, today or upcoming.
+pub fn month_holidays(today: NaiveDate, holidays: &Holidays) -> Vec<MonthHoliday> {
+    holidays
+        .in_month(today.year(), today.month())
+        .into_iter()
+        .map(|(date, name)| MonthHoliday {
+            date,
+            name: name.to_string(),
+            weekday: date.weekday().number_from_monday(),
+            state: match date.cmp(&today) {
+                std::cmp::Ordering::Less => HolidayState::Past,
+                std::cmp::Ordering::Equal => HolidayState::Today,
+                std::cmp::Ordering::Greater => HolidayState::Upcoming,
+            },
+        })
+        .collect()
+}
+
 /// Everything the UI needs, computed from `today`.
 pub fn payday_info(
     today: NaiveDate,
@@ -201,6 +247,7 @@ pub fn payday_info(
         holiday_list_may_be_outdated: days_left <= HINT_WINDOW_DAYS && !status.verified_recently,
         holiday_list_updated: status.updated,
         holiday_list_source: status.source,
+        month_holidays: month_holidays(today, holidays),
     }
 }
 
@@ -250,6 +297,31 @@ mod tests {
         assert_eq!(nominal_payday(2024, 2, 30), d(2024, 2, 29));
         assert_eq!(nominal_payday(2026, 4, 31), d(2026, 4, 30));
         assert_eq!(nominal_payday(2026, 12, 31), d(2026, 12, 31));
+    }
+
+    #[test]
+    fn parses_test_dates() {
+        assert_eq!(parse_date_override("2026-11-27"), Some(d(2026, 11, 27)));
+        assert_eq!(parse_date_override("  2026-11-27\n"), Some(d(2026, 11, 27)));
+        assert_eq!(parse_date_override("2028-02-29"), Some(d(2028, 2, 29))); // leap day
+    }
+
+    #[test]
+    fn rejects_bad_test_dates() {
+        for bad in ["", "today", "27-11-2026", "2026/11/27", "2026-13-01", "2026-02-30", "2027-02-29", "2026-11-27 10:00"] {
+            assert_eq!(parse_date_override(bad), None, "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn a_test_date_on_payday_gives_zero_days_left() {
+        // The point of the override: pretend today is payday and the app shows the payday state.
+        let h = hols(&[(2025, 11, 14, "Test Holiday")]);
+        let today = parse_date_override("2025-11-13").unwrap(); // Saturday 15th + holiday 14th -> Thu 13th
+        let info = payday_info(today, &TWICE, &h, &status(false, false));
+        assert_eq!(info.days_left, 0);
+        assert_eq!(info.next_payday.actual_date, today);
+        assert!((info.progress - 1.0).abs() < 1e-9);
     }
 
     #[test]
@@ -525,6 +597,46 @@ mod tests {
         assert_eq!(json["holidayListMayBeOutdated"], true);
         assert_eq!(json["holidayListUpdated"], "2026-11-26");
         assert_eq!(json["holidayListSource"], "embedded");
+    }
+
+    #[test]
+    fn month_holidays_are_marked_past_today_or_upcoming() {
+        let h = hols(&[
+            (2025, 11, 30, "Bonifacio Day"), // other month: must not appear
+            (2025, 12, 8, "Feast of the Immaculate Conception"),
+            (2025, 12, 24, "Christmas Eve"),
+            (2025, 12, 25, "Christmas Day"),
+        ]);
+        let list = month_holidays(d(2025, 12, 24), &h);
+        let summary: Vec<_> = list.iter().map(|m| (m.date, m.state, m.weekday)).collect();
+        assert_eq!(
+            summary,
+            vec![
+                (d(2025, 12, 8), HolidayState::Past, 1),     // Monday
+                (d(2025, 12, 24), HolidayState::Today, 3),   // Wednesday
+                (d(2025, 12, 25), HolidayState::Upcoming, 4), // Thursday
+            ]
+        );
+        assert_eq!(list[1].name, "Christmas Eve");
+    }
+
+    #[test]
+    fn month_holidays_is_empty_for_a_month_without_holidays() {
+        let h = hols(&[(2025, 12, 25, "Christmas Day")]);
+        assert!(month_holidays(d(2025, 3, 10), &h).is_empty());
+    }
+
+    #[test]
+    fn payday_info_includes_month_holidays_and_serializes_them() {
+        let h = hols(&[(2025, 11, 30, "Bonifacio Day"), (2025, 11, 1, "All Saints' Day")]);
+        let info = payday_info(d(2025, 11, 10), &TWICE, &h, &status(false, false));
+        assert_eq!(info.month_holidays.len(), 2);
+        let json = serde_json::to_value(&info).unwrap();
+        assert_eq!(json["monthHolidays"][0]["date"], "2025-11-01");
+        assert_eq!(json["monthHolidays"][0]["state"], "past");
+        assert_eq!(json["monthHolidays"][0]["weekday"], 6); // Saturday
+        assert_eq!(json["monthHolidays"][1]["state"], "upcoming");
+        assert_eq!(json["monthHolidays"][1]["name"], "Bonifacio Day");
     }
 
     #[test]

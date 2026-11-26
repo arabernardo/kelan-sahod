@@ -1,7 +1,8 @@
 [package]
 name = "kelan-sahod"
-version = "0.1.1"
+version = "0.1.2"
 description = "Kelan Sahod: countdown to your next payday"
+authors = ["Arianna Maouna Bernardo <ariannamaounab@gmail.com>"]
 edition = "2021"
 
 [lib]

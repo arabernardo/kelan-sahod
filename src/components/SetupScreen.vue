@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { copy, presets } from '../copy'
+import { copy } from '../copy'
 import type { Schedule } from '../types'
 
 const props = defineProps<{ initial: Schedule | null }>()
@@ -16,8 +16,8 @@ function sameDays(a: Schedule, b: Schedule): boolean {
 }
 
 // Start from what's saved: a matching preset, or Custom with the saved days.
-const matchedPreset = props.initial ? presets.find((p) => sameDays(p.schedule, props.initial!)) : undefined
-const choice = ref<string>(matchedPreset?.id ?? (props.initial ? CUSTOM : presets[0].id))
+const matchedPreset = props.initial ? copy.presets.find((p) => sameDays(p.schedule, props.initial!)) : undefined
+const choice = ref<string>(matchedPreset?.id ?? (props.initial ? CUSTOM : copy.presets[0].id))
 const customFirst = ref<number | ''>(props.initial && !matchedPreset ? props.initial.firstDay : '')
 const customSecond = ref<number | ''>(props.initial && !matchedPreset ? props.initial.secondDay : '')
 
@@ -51,7 +51,7 @@ function submit() {
     emit('save', { firstDay: customFirst.value as number, secondDay: customSecond.value as number })
     return
   }
-  const preset = presets.find((p) => p.id === choice.value) ?? presets[0]
+  const preset = copy.presets.find((p) => p.id === choice.value) ?? copy.presets[0]
   emit('save', { ...preset.schedule })
 }
 </script>
@@ -63,11 +63,12 @@ function submit() {
       <p class="lede">{{ copy.setup.subtitle }}</p>
     </header>
 
+    <div class="setup__form">
     <fieldset class="choices">
       <legend class="choices__legend">{{ copy.setup.question }}</legend>
 
       <label
-        v-for="preset in presets"
+        v-for="preset in copy.presets"
         :key="preset.id"
         class="choice"
         :class="{ 'choice--on': choice === preset.id }"
@@ -122,6 +123,7 @@ function submit() {
       <button v-if="initial" type="button" class="btn btn--quiet" @click="emit('cancel')">
         {{ copy.setup.cancel }}
       </button>
+    </div>
     </div>
   </form>
 </template>

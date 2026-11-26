@@ -18,7 +18,7 @@ use std::time::Duration;
 /// Edit that file on GitHub and bump its "updated" date; installed apps pick it up.
 /// TODO: replace OWNER/REPO (and the branch, if it is not `main`) with your repository.
 pub const HOLIDAYS_URL: &str =
-    "https://raw.githubusercontent.com/arabernardo/kelan-sahod/refs/heads/main/src-tauri/data/holidays.json";
+    "https://raw.githubusercontent.com/OWNER/REPO/main/src-tauri/data/holidays.json";
 
 const PLACEHOLDER: &str = "OWNER/REPO";
 const CACHE_FILE: &str = "holidays-cache.json";

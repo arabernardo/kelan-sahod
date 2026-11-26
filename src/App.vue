@@ -1,19 +1,86 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import HomeScreen from './components/HomeScreen.vue'
+import SettingsScreen from './components/SettingsScreen.vue'
 import SetupScreen from './components/SetupScreen.vue'
-import { getPaydayInfo, loadSchedule, refreshHolidays, saveSchedule } from './api'
-import { copy } from './copy'
-import type { PaydayInfo, Schedule } from './types'
+import {
+  applyLayout,
+  getPaydayInfo,
+  loadLanguage,
+  loadLayout,
+  loadSchedule,
+  refreshHolidays,
+  saveLanguage,
+  saveLayout,
+  saveSchedule,
+} from './api'
+import { copy, language, setLanguage } from './copy'
+import type { Language, LayoutMode, PaydayInfo, Schedule } from './types'
 
-type Screen = 'loading' | 'setup' | 'home' | 'error'
+type Screen = 'loading' | 'setup' | 'home' | 'settings' | 'error'
 
 const screen = ref<Screen>('loading')
 const schedule = ref<Schedule | null>(null)
 const info = ref<PaydayInfo | null>(null)
+const layout = ref<LayoutMode>('full')
+
+// Load the saved layout and make sure the window matches it. Rust already sized the window
+// at startup; this is the safety net. A failure here just means the full layout.
+async function initLayout() {
+  try {
+    layout.value = await loadLayout()
+    await applyLayout(layout.value)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// Settings apply immediately: resize the window, then remember the choice.
+async function onLayoutChange(mode: LayoutMode) {
+  layout.value = mode
+  try {
+    await applyLayout(mode)
+    await saveLayout(mode)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// Load the saved language. A failure here just means Tagalog.
+async function initLanguage() {
+  try {
+    setLanguage(await loadLanguage())
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// Switching applies immediately everywhere; then remember the choice.
+async function onLanguageChange(next: Language) {
+  setLanguage(next)
+  try {
+    await saveLanguage(next)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+// Tell the page (and screen readers) which language the text is in.
+watch(
+  language,
+  (current) => {
+    document.documentElement.lang = current === 'tl' ? 'fil' : 'en'
+  },
+  { immediate: true },
+)
+
+function onSettingsBack() {
+  screen.value = schedule.value && info.value ? 'home' : 'setup'
+}
 
 async function init() {
   screen.value = 'loading'
+  await Promise.all([initLayout(), initLanguage()])
   try {
     const saved = await loadSchedule()
     if (!saved) {
@@ -88,7 +155,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="shell">
+  <main class="shell" :class="`shell--${layout}`">
     <p v-if="screen === 'loading'" class="status" role="status">{{ copy.loading }}</p>
 
     <SetupScreen
@@ -101,7 +168,18 @@ onBeforeUnmount(() => {
     <HomeScreen
       v-else-if="screen === 'home' && info"
       :info="info"
+      :compact="layout === 'compact'"
       @edit="screen = 'setup'"
+      @settings="screen = 'settings'"
+    />
+
+    <SettingsScreen
+      v-else-if="screen === 'settings'"
+      :layout="layout"
+      :language="language"
+      @layout="onLayoutChange"
+      @language="onLanguageChange"
+      @back="onSettingsBack"
     />
 
     <div v-else class="error" role="alert">

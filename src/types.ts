@@ -6,6 +6,12 @@ export type Schedule = {
   secondDay: number
 }
 
+/** App language: Tagalog (conyo) or English */
+export type Language = 'tl' | 'en'
+
+/** Window layout: a small countdown-only window, or the full two-column landscape window */
+export type LayoutMode = 'compact' | 'full'
+
 export type AdjustReason =
   | { kind: 'saturday'; date: string }
   | { kind: 'sunday'; date: string }
@@ -19,6 +25,16 @@ export type AdjustedPayday = {
   actualWeekday: number
   /** Skipped days, from the nominal date going backwards */
   reasons: AdjustReason[]
+}
+
+export type HolidayState = 'past' | 'today' | 'upcoming'
+
+export type MonthHoliday = {
+  date: string
+  name: string
+  /** 1 = Monday ... 7 = Sunday */
+  weekday: number
+  state: HolidayState
 }
 
 export type PaydayInfo = {
@@ -35,4 +51,6 @@ export type PaydayInfo = {
   /** Date the holiday list in use was last edited (YYYY-MM-DD) */
   holidayListUpdated: string | null
   holidayListSource: 'embedded' | 'remote'
+  /** Every holiday in the current month, in date order */
+  monthHolidays: MonthHoliday[]
 }

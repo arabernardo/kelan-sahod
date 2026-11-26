@@ -1,27 +1,64 @@
 {
-  "_readme": "UPDATE THIS EVERY YEAR based on the official Presidential Proclamations. Bump \"updated\" every time you edit this file: the app only accepts a downloaded copy whose \"updated\" date is the same or newer than the one built into it.",
+  "_readme": "UPDATE THIS EVERY YEAR based on the official Presidential Proclamations. List the movable / proclaimed holidays here: Eid'l Fitr, Eid'l Adha, Chinese New Year, Maundy Thursday, Good Friday, and any special non-working day. An entry here REPLACES the app's generated holiday with the same name in the same year. Do NOT list fixed-date holidays (Jan 1, Dec 25, ...) or National Heroes Day: the app generates those. Bump \"updated\" every time you edit this file: the app only accepts a downloaded copy whose \"updated\" date is the same or newer than the one built into it.",
   "updated": "2026-11-26",
   "holidays": [
-    { "date": "2026-02-17", "name": "Chinese New Year" },
-    { "date": "2026-04-02", "name": "Maundy Thursday" },
-    { "date": "2026-04-03", "name": "Good Friday" },
-    { "date": "2026-04-04", "name": "Black Saturday" },
-    { "date": "2026-08-31", "name": "National Heroes Day" },
-
-    { "date": "2027-03-25", "name": "Maundy Thursday" },
-    { "date": "2027-03-26", "name": "Good Friday" },
-    { "date": "2027-03-27", "name": "Black Saturday" },
-    { "date": "2027-08-30", "name": "National Heroes Day" }
+    {
+      "date": "2026-02-17",
+      "name": "Chinese New Year"
+    },
+    {
+      "date": "2026-04-02",
+      "name": "Maundy Thursday"
+    },
+    {
+      "date": "2026-04-03",
+      "name": "Good Friday"
+    },
+    {
+      "date": "2026-11-16",
+      "name": "49th ASEAN Summit (D1)"
+    },
+    {
+      "date": "2026-11-17",
+      "name": "49th ASEAN Summit (D2)"
+    },
+    {
+      "date": "2026-11-18",
+      "name": "49th ASEAN Summit (D3)"
+    },
+    {
+      "date": "2027-02-06",
+      "name": "Chinese New Year"
+    },
+    {
+      "date": "2027-03-25",
+      "name": "Maundy Thursday"
+    },
+    {
+      "date": "2027-03-26",
+      "name": "Good Friday"
+    }
   ],
   "todoVerify": [
-    { "year": 2026, "name": "Eid'l Fitr", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
-    { "year": 2026, "name": "Eid'l Adha", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
-    { "year": 2026, "name": "All Souls' Day (Nov 2)", "note": "Declared a special non-working day in some years only. Check the proclamation." },
-    { "year": 2026, "name": "Christmas Eve (Dec 24)", "note": "Declared a special non-working day in some years only. Check the proclamation." },
-    { "year": 2027, "name": "Chinese New Year", "note": "Only add if declared a special non-working day for 2027." },
-    { "year": 2027, "name": "Eid'l Fitr", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
-    { "year": 2027, "name": "Eid'l Adha", "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed." },
-    { "year": 2027, "name": "All Souls' Day (Nov 2)", "note": "Check the proclamation." },
-    { "year": 2027, "name": "Christmas Eve (Dec 24)", "note": "Check the proclamation." }
+    {
+      "year": 2026,
+      "name": "Eid'l Fitr",
+      "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed."
+    },
+    {
+      "year": 2026,
+      "name": "Eid'l Adha",
+      "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed."
+    },
+    {
+      "year": 2027,
+      "name": "Eid'l Fitr",
+      "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed."
+    },
+    {
+      "year": 2027,
+      "name": "Eid'l Adha",
+      "note": "Date follows the Islamic calendar and is set by proclamation. Add once confirmed."
+    }
   ]
 }
